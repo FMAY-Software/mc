@@ -90,6 +90,7 @@
 .select any te_sys from instances of TE_SYS
 .// Pull into scope global values from singleton classes.
 .select any te_callout from instances of TE_CALLOUT
+.select any te_cia from instances of TE_CIA
 .select any te_container from instances of TE_CONTAINER
 .select any te_copyright from instances of TE_COPYRIGHT
 .select any te_dlist from instances of TE_DLIST
@@ -110,10 +111,6 @@
 .select any te_tim from instances of TE_TIM
 .select any te_trace from instances of TE_TRACE
 .select any te_typemap from instances of TE_TYPEMAP
-.// CDS
-.assign te_string.u128touuid = te_prefix.result + "u128touuid"
-.assign te_string.uuidtou128 = te_prefix.result + "uuidtou128"
-.// CDS
 .//
 .select many active_te_cs from instances of TE_C where ( ( selected.internal_behavior ) and ( selected.included_in_build ) )
 .invoke r = TE_C_sort( active_te_cs )
@@ -125,6 +122,8 @@
 .assign system_parameters = r.body
 .invoke system_class_array = DefineClassInfoArray( first_te_c )
 .invoke domain_ids = DeclareDomainIdentityEnums( first_te_c, num_ooa_doms )
+.invoke non_self_event_queue_needed = GetSystemNonSelfEventQueueNeeded()
+.invoke self_event_queue_needed = GetSystemSelfEventQueueNeeded()
 .//
 .// Get the TE_EEs that are not inside of a component.
 .select many te_ees from instances of TE_EE where ( ( selected.RegisteredName != "TIM" ) and ( selected.Included ) )
@@ -156,19 +155,12 @@
 .invoke main_decl = GetMainTaskEntryDeclaration()
 .invoke r = GetMainTaskEntryReturn()
 .assign return_body = r.body
-.select any te_cia from instances of TE_CIA
 .//
 .// function-based archetype generation
 .//
 .invoke event_prioritization_needed = GetSystemEventPrioritizationNeeded()
-.invoke non_self_event_queue_needed = GetSystemNonSelfEventQueueNeeded()
-.invoke self_event_queue_needed = GetSystemSelfEventQueueNeeded()
 .//
 .assign printf = "printf"
-.if ( te_thread.flavor == "Nucleus" )
-  .assign printf = "NU_printf"
-.end if
-.assign inst_id_in_handle = ""
 .//
 .invoke persist_check_mark = GetPersistentCheckMarkPostName()
 .//
@@ -187,7 +179,7 @@
     .assign all_instance_dumpersd = all_instance_dumpersd + "extern ${te_prefix.result}idf ${te_c.Name}_instance_dumpers[ ${te_dci.max} ];\n"
     .assign all_instance_dumpers = all_instance_dumpers + "  ${te_c.Name}_instance_dumpers,\n"
     .assign all_max_class_numbers = ( all_max_class_numbers + " + " ) + te_dci.max
-  .select one te_c related by te_c->TE_C[R2017.'succeeds']
+  .select one te_c related by te_c->TE_C[R2017.'precedes']
 .end while
 .//
 .//
@@ -214,16 +206,13 @@
 .invoke r = DefineActiveClassCountArray( te_cs )
 .assign active_class_counts = r.body
 .assign domain_num_var = "domain_num"
+.invoke r = PersistentClassUnion( active_te_cs )
+.assign persist_class_union_name = r.result
+.assign persist_class_union = r.body
+.invoke persist_post_link = GetPersistentPostLinkName()
+.assign inst_id_in_handle = ""
 .if ( te_sys.PersistentClassCount > 0 )
-  .invoke r = PersistentClassUnion( active_te_cs )
-  .assign persist_class_union = r.result
-  .invoke persist_post_link = GetPersistentPostLinkName()
   .assign inst_id_in_handle = "  ${te_persist.dirty_type} ${te_persist.dirty_name};\n"
-  .include "${te_file.arc_path}/t.sys_persist.c"
-  .emit to file "${te_file.system_source_path}/${te_file.persist}.${te_file.src_file_ext}"
-  .//
-  .include "${te_file.arc_path}/t.sys_persist.h"
-  .emit to file "${te_file.system_include_path}/${te_file.persist}.${te_file.hdr_file_ext}"
   .//
   .include "${te_file.arc_path}/t.sys_nvs.h"
   .emit to file "${te_file.system_include_path}/${te_file.nvs}.${te_file.hdr_file_ext}"
@@ -236,32 +225,10 @@
   .// System-C provides its own threading.
   .if ( te_thread.flavor == "POSIX" )
     .include "${te_file.arc_path}/t.sys_threadposix.c"
-  .elif ( te_thread.flavor == "Nucleus" )
-    .include "${te_file.arc_path}/t.sys_threadnuke.c"
   .elif ( te_thread.flavor == "Windows" )
     .include "${te_file.arc_path}/t.sys_threadwin.c"
-  .elif ( te_thread.flavor == "OSX" )
-    .include "${te_file.arc_path}/t.sys_threadosx.c"
-  .elif ( te_thread.flavor == "AUTOSAR" )
-    .include "${te_file.arc_path}/t.sys_threadautosar.c"
   .end if
   .emit to file "${te_file.system_source_path}/${te_file.thread}.${te_file.src_file_ext}"
-.end if
-.//
-.if ( te_sys.MaxInterleavedBridges > 0 )
-  .invoke disable_interrupts = UserDisableInterrupts()
-  .invoke enable_interrupts = UserEnableInterrupts()
-  .//===========================================================================
-  .// Generate sys_ilb.h into system gen includes.
-  .//===========================================================================
-  .include "${te_file.arc_path}/t.sys_ilb.h"
-  .emit to file "${te_file.system_include_path}/${te_file.ilb}.${te_file.hdr_file_ext}"
-  .//
-  .//===========================================================================
-  .// Generate sys_ilb.c into system gen source.
-  .//===========================================================================
-  .include "${te_file.arc_path}/t.sys_ilb.c"
-  .emit to file "${te_file.system_source_path}/${te_file.ilb}.${te_file.src_file_ext}"
 .end if
 .//
 .//=============================================================================
@@ -342,6 +309,10 @@
 .//=============================================================================
 .if ( te_sys.InstanceLoading )
 .include "${te_file.arc_path}/t.sys_xtumlload.c"
+.select any te_sync from instances of TE_SYNC where ( selected.Name == "load_activity_code_block" )
+.if ( not_empty te_sync )
+.include "${te_file.arc_path}/t.sys_maslload.c"
+.end if
 .emit to file "${te_file.system_source_path}/${te_file.xtumlload}.${te_file.src_file_ext}"
 .end if
 .print "ending ${info.date}"

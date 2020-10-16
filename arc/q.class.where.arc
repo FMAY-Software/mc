@@ -41,7 +41,7 @@
   .//
   .select any te_attr related by te_class->TE_ATTR[R2061]
   .while ( not_empty te_attr )
-    .select one prev_te_attr related by te_attr->TE_ATTR[R2087.'precedes']
+    .select one prev_te_attr related by te_attr->TE_ATTR[R2087.'succeeds']
     .if ( empty prev_te_attr )
       .break while
     .end if
@@ -53,7 +53,12 @@
       .assign oida_count = oida_count + 1
       .assign param_list = param_list + te_attr.GeneratedType
       .if ( not gen_declaration )
-        .if ( te_attr.dimensions == 0 )
+        .select one te_dt related by te_attr->O_ATTR[R2033]->S_DT[R114]->TE_DT[R2021]
+        .select one base_te_dt related by te_attr->O_ATTR[R2033]->O_RATTR[R106]->O_BATTR[R113]->O_ATTR[R106]->S_DT[R114]->TE_DT[R2021]
+        .if ( not_empty base_te_dt )
+          .assign te_dt = base_te_dt
+        .end if
+        .if ( ( te_attr.dimensions == 0 ) and ( 4 != te_dt.Core_Typ ) )
           .assign cmp_element = "${temp_ptr}->${te_attr.GeneratedName} == ${te_attr.ParamBuffer}"
         .else
           .// "string"
@@ -70,7 +75,7 @@
         .assign compare_stmt = compare_stmt + " && "
       .end if
     .end if
-    .select one te_attr related by te_attr->TE_ATTR[R2087.'succeeds']
+    .select one te_attr related by te_attr->TE_ATTR[R2087.'precedes']
   .end while
   .//
   .if ( gen_declaration )

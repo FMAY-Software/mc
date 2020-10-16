@@ -127,7 +127,7 @@
       .end if
       .//
       .// Advance to the next object attribute, if any.
-      .select one te_attr related by te_attr->TE_ATTR[R2087.'succeeds']
+      .select one te_attr related by te_attr->TE_ATTR[R2087.'precedes']
       .//
       .// Generate comma separator.
       .if ( not_empty te_attr )
@@ -216,7 +216,7 @@
           .// Simple relationship?
           .select one simple_rel related by rel->R_SIMP[R206]
           .if ( not_empty simple_rel )
-            .select one participant related by simple_rel->R_PART[R207]
+            .select any participant related by simple_rel->R_PART[R207]
             .select one formalizer related by simple_rel->R_FORM[R208]
             .if ( empty formalizer )
               .print "\n\tRelationship R${rel.Numb} is not formalized!\n"

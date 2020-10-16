@@ -396,7 +396,7 @@ INSERT INTO SPR_PS
 	'end',
 	'',
 	'',
-	3,
+	1,
 	0);
 INSERT INTO C_EP_PROXY
 	VALUES ("0ea72257-0ebc-46e1-ab27-94d34a5b47cc",
@@ -436,7 +436,14 @@ INSERT INTO SPR_PS
 	VALUES ("fb7bb327-37da-4312-9cff-c3d42aa49d79",
 	'render',
 	'',
-	'file::render( element:param.element, name:param.name, structuralOnly:param.structuralOnly );',
+	'if ( "MASL" == param.architecture )
+  genfile::render_masl( element:param.element, name:param.name, structuralOnly:param.structuralOnly );
+elif ( "WASL" == param.architecture )
+  genfile::outfolder( name:param.name ); // Populate the primary file with default output folder.
+  genfile::render_wasl( element:param.element, name:param.name, structuralOnly:param.structuralOnly );
+else
+  // invalid architecture flavor
+end if;',
 	1,
 	0);
 INSERT INTO C_EP_PROXY
@@ -482,7 +489,7 @@ INSERT INTO SPR_PS
 	VALUES ("de8c2480-5fcd-4ddf-8250-bb47fa815a2a",
 	'validate',
 	'',
-	'file::validate();',
+	'genfile::validate();',
 	1,
 	0);
 INSERT INTO C_EP_PROXY
@@ -491,6 +498,24 @@ INSERT INTO C_EP_PROXY
 	-1,
 	'validate',
 	'',
+	'../gen/gen.xtuml');
+INSERT INTO SPR_PEP
+	VALUES ("a82c4d20-566c-4aa4-b32a-8d4ccd1acaba",
+	"8ac11297-2622-4a30-9eec-fc2138b26abd",
+	"4ebc1bcb-73d2-443e-a865-ff6c9398aa16");
+INSERT INTO SPR_PS
+	VALUES ("a82c4d20-566c-4aa4-b32a-8d4ccd1acaba",
+	'coverage',
+	'population::coverage();',
+	'population::coverage();',
+	1,
+	0);
+INSERT INTO C_EP_PROXY
+	VALUES ("8ac11297-2622-4a30-9eec-fc2138b26abd",
+	"965609b5-99d9-40ca-bc70-74dd6acccf34",
+	-1,
+	'coverage',
+	'population::coverage();',
 	'../gen/gen.xtuml');
 INSERT INTO C_I_PROXY
 	VALUES ("965609b5-99d9-40ca-bc70-74dd6acccf34",

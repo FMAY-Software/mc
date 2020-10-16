@@ -137,10 +137,10 @@
           .assign channels_declaration      = channels_declaration       + "  sc_signal < ${signal_type} >  ${signal_name}${array_spec};\n"
           .assign bind_port = bind_port + "    ${for_loop}${signal_name}${array_index}  (c.${signal_name}${array_index});${end_for_loop}\n"
         .end if
-        .select one te_parm related by te_parm->TE_PARM[R2041.'succeeds']
+        .select one te_parm related by te_parm->TE_PARM[R2041.'precedes']
       .end while
     .end if
-      .select one te_mact related by te_mact->TE_MACT[R2083.'succeeds']
+      .select one te_mact related by te_mact->TE_MACT[R2083.'precedes']
     .end while
   .end for
   .if ( te_sys.SystemCPortsType == "BitLevelSignals" )
@@ -361,7 +361,7 @@ ${top_module_inits}\
     .assign delegate_c_c_id = ""
     .assign delegate_pkg_id = ""
     .if ( not_empty te_ci )
-      .select one cl_iir_provider related by te_ci->CL_IC[R2009]->CL_POR[R4707]->CL_IIR[R4708] where ( selected.Ref_Id == c_ir.Id )
+      .select any cl_iir_provider related by te_ci->CL_IC[R2009]->CL_POR[R4707]->CL_IIR[R4708] where ( selected.Ref_Id == c_ir.Id )
       .select one delegate_c_c related by cl_iir_provider->C_DG[R4704]->PA_DIC[R9002]->C_C[R9002] where ( "${selected.Id}" == "${parent_c_c_id}" )
       .if ( not_empty delegate_c_c )
         .assign delegate_c_c_id  = "${delegate_c_c.Id}"
@@ -596,8 +596,8 @@ ${top_module_inits}\
   .// generate the action body defined in this port
   .select any c_ir_formal related by te_po->C_I[R2007]->C_IR[R4012]
   .select any c_ir related by te_po->C_PO[R2044]->C_IR[R4016]
-  .select one delegate_c_c_formal related by c_ir_formal->C_RID[R4013]->C_DG[R4013]->C_IR[R4014]->C_PO[R4016]->C_C[R4010]->TE_C[R2054]
-  .select one delegate_c_c related by c_ir->C_RID[R4013]->C_DG[R4013]->C_IR[R4014]->C_PO[R4016]->C_C[R4010]->TE_C[R2054]
+  .select any delegate_c_c_formal related by c_ir_formal->C_RID[R4013]->C_DG[R4013]->C_IR[R4014]->C_PO[R4016]->C_C[R4010]->TE_C[R2054]
+  .select any delegate_c_c related by c_ir->C_RID[R4013]->C_DG[R4013]->C_IR[R4014]->C_PO[R4016]->C_C[R4010]->TE_C[R2054]
   .if ( (not_empty delegate_c_c_formal) or (not_empty delegate_c_c) )
     .if ( "void" != te_aba.ReturnDataType )
       .assign action_body = "  return "
@@ -692,7 +692,7 @@ ${port_action.body}
     .else
       .print "ERROR:  Detected invalid component port message configuration."
     .end if
-      .select one te_mact related by te_mact->TE_MACT[R2083.'succeeds']
+      .select one te_mact related by te_mact->TE_MACT[R2083.'precedes']
     .end while
   .end for
 .end function
@@ -855,7 +855,7 @@ ${port_action.body}
             .assign register_description = "${register_name} description field"
             .assign attr_register_declaration = attr_register_declaration + "  declare_register ${te_po.name}_i ${register_name} ${register_offset_name} {} -rw_access r/w -width 32\n"
           .end if
-          .select one te_parm related by te_parm->TE_PARM[R2041.'succeeds']
+          .select one te_parm related by te_parm->TE_PARM[R2041.'precedes']
         .end while
         .if( "void" != te_aba.ReturnDataType )
           .select any te_dt_return from instances of TE_DT where ( selected.ExtName == "${te_aba.ReturnDataType}" )
@@ -892,7 +892,7 @@ ${port_action.body}
         .//  .assign register_address = register_address + 4;
         .//.end for
       .end if
-      .select one te_mact related by te_mact->TE_MACT[R2083.'succeeds']
+      .select one te_mact related by te_mact->TE_MACT[R2083.'precedes']
     .end while
   .end for
   .//
@@ -992,7 +992,7 @@ ${port_action.body}
             .assign register_address = "${offset_name}_MEM_OFFSET"
           .end if
           .assign param_reg_write = param_reg_write + "    m_mbmodule->${te_po.name}_o_write(${register_address}, ${casting}${te_parm.GeneratedName} ${payload_size});\n"
-          .select one te_parm related by te_parm->TE_PARM[R2041.'succeeds']
+          .select one te_parm related by te_parm->TE_PARM[R2041.'precedes']
         .end while
         .if( "void" != te_aba.ReturnDataType )
           .select any te_dt_return from instances of TE_DT where ( selected.ExtName == "${te_aba.ReturnDataType}" )
@@ -1032,7 +1032,7 @@ ${port_action.body}
         .end if
         .assign outgoing_port_call_declaration = outgoing_port_call_declaration + "  ${te_aba.ReturnDataType} ${te_aba.GeneratedName}(${te_aba.ParameterDefinition}) { \n    static unsigned char d = ${te_mact_number}; \n${param_reg_write}\n    m_mbmodule->${te_po.name}_o_write(0x0, &d, 1);\n${param_reg_read}\n  }\n"
       .end if
-      .select one te_mact related by te_mact->TE_MACT[R2083.'succeeds']
+      .select one te_mact related by te_mact->TE_MACT[R2083.'precedes']
     .end while
     .//
     .if ( te_po.Provision )
@@ -1156,7 +1156,7 @@ ${port_action.body}
           .if ( param_number <  param_count )
             .assign param_register = param_register + ", "
           .end if
-          .select one te_parm related by te_parm->TE_PARM[R2041.'succeeds']
+          .select one te_parm related by te_parm->TE_PARM[R2041.'precedes']
         .end while
         .assign return_register = ""
         .assign return_variable = ""
@@ -1200,7 +1200,7 @@ ${port_action.body}
         .end if
         .assign ingoing_reg_callback_declaration = ingoing_reg_callback_declaration + "    case ${te_mact_number}:{\n${temp_var}${return_variable} m_${te_c.Name}.${te_aba.GeneratedName}(${param_register})${return_variable_end};\n${return_register}\n    }\n  break;\n"
       .end if
-      .select one te_mact related by te_mact->TE_MACT[R2083.'succeeds']
+      .select one te_mact related by te_mact->TE_MACT[R2083.'precedes']
     .end while
     .assign ingoing_reg_callback_declaration = ingoing_reg_callback_declaration + "    default:\n   cout << sc_time_stamp() << "" ${te_c.Name}::${pulse_function_name} -- Received unexpected command"" << endl;\n   SC_REPORT_ERROR(""${te_c.Name}::${pulse_function_name}"",""Received unexpected command"");\n  }\n}\n"
   .end for
@@ -1217,7 +1217,7 @@ ${port_action.body}
   .while ( not_empty te_mact )
     .assign attr_message_order = attr_message_order + "#define   ${te_mact.GeneratedName}_order ${message_order}\n"
     .assign message_order = message_order + 1
-    .select one te_mact related by te_mact->TE_MACT[R2083.'succeeds']
+    .select one te_mact related by te_mact->TE_MACT[R2083.'precedes']
   .end while
 .end function
 .//
@@ -1288,7 +1288,7 @@ ${port_action.body}
           .assign register_offset_name = "${register_name}_REG_OFFSET"
           .assign attr_register_offset = attr_register_offset + "#define  ${register_offset_name} ${register_address}\n"
         .end if
-        .select one te_parm related by te_parm->TE_PARM[R2041.'succeeds']
+        .select one te_parm related by te_parm->TE_PARM[R2041.'precedes']
       .end while
       .if( "void" != te_aba.ReturnDataType )
         .select any te_dt_return from instances of TE_DT where ( selected.ExtName == "${te_aba.ReturnDataType}" )
@@ -1328,7 +1328,7 @@ ${port_action.body}
       .//  .assign register_address = register_address + 4;
       .//.end for
     .end if
-    .select one te_mact related by te_mact->TE_MACT[R2083.'succeeds']
+    .select one te_mact related by te_mact->TE_MACT[R2083.'precedes']
   .end while
 .end function
 .//
@@ -1379,7 +1379,7 @@ ${port_action.body}
             .// -- declare registers to hold variables
             .assign register_address = register_address + 4
           .end if
-          .select one te_parm related by te_parm->TE_PARM[R2041.'succeeds']
+          .select one te_parm related by te_parm->TE_PARM[R2041.'precedes']
         .end while
         .if( "void" != te_aba.ReturnDataType )
           .select any te_dt_return from instances of TE_DT where ( selected.ExtName == "${te_aba.ReturnDataType}" )
@@ -1402,7 +1402,7 @@ ${port_action.body}
           .end if
         .end if
       .end if
-      .select one te_mact related by te_mact->TE_MACT[R2083.'succeeds']
+      .select one te_mact related by te_mact->TE_MACT[R2083.'precedes']
     .end while
     .assign address_space_range = register_address +  4
     .assign address_width = 1
@@ -1499,7 +1499,7 @@ ${port_action.body}
             .invoke register_dec = TE_C_ipxact_register(te_po, register_name, register_address, register_offset_name, register_description)
             .assign register_declaration = register_declaration + register_dec.body
           .end if
-          .select one te_parm related by te_parm->TE_PARM[R2041.'succeeds']
+          .select one te_parm related by te_parm->TE_PARM[R2041.'precedes']
         .end while
         .if( "void" != te_aba.ReturnDataType )
           .select any te_dt_return from instances of TE_DT where ( selected.ExtName == "${te_aba.ReturnDataType}" )
@@ -1547,7 +1547,7 @@ ${port_action.body}
         .//  .assign register_address = register_address + 4
         .//.end for
       .end if
-      .select one te_mact related by te_mact->TE_MACT[R2083.'succeeds']
+      .select one te_mact related by te_mact->TE_MACT[R2083.'precedes']
     .end while
     .assign address_space_range = register_address + 4
     .include "${te_file.arc_path}/t.component.ipxact.registers.xml"

@@ -22,6 +22,7 @@
   .param inst_ref o_attr
   .//
   .select one s_dt related by o_attr->S_DT[R114]
+  .select one parent_te_dt related by s_dt->TE_DT[R2021]
   .select one s_udt related by s_dt->S_UDT[R17]
   .if ( not_empty s_udt )
     .invoke r = GetBaseTypeForUDT( s_udt )
@@ -62,6 +63,12 @@
       .// Note: the following is a recursive call to this function
       .invoke r = GetAttributeCodeGenType( base_o_attr )
       .assign te_dt = r.result
+    .end if
+    .if ( 11 == s_cdt.Core_Typ )
+      .// inst<Mapping>
+      .// Come up one level from bottoming out CDT, because the
+      .// code gen information is in the parent for Mappings.
+      .assign te_dt = parent_te_dt
     .end if
   .end if
   .assign attr_result = te_dt
@@ -153,9 +160,10 @@
   .assign sys_types_file_name = ( te_file.types + "." ) + te_file.hdr_file_ext
   .select many special_te_dts from instances of TE_DT where ( ( selected.Include_File != "" ) and ( selected.Include_File != sys_types_file_name ) )
   .assign s = ""
+  .invoke r = T_quote()
+  .assign q = r.result
   .for each special_te_dt in special_te_dts
-    .assign s = ( s + "#include """ ) + ( special_te_dt.Include_File + """\n" )
-    .invoke oal( "s = Escher_strcpy( s, Escher_stradd( Escher_stradd( s, #include  ), Escher_stradd( special_te_dt->Include_File, \n ) ) ); // Ccode" )
+    .assign s = s + "#include " + q + special_te_dt.Include_File + q + "\n"
   .end for
   .assign attr_result = s
 .end function
